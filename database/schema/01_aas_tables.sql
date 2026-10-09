@@ -1,0 +1,87 @@
+-- =====================================================================
+-- 01_aas_tables.sql
+-- 子系統：AAS 帳號與權限管理 (Account and Authority Management)
+-- 本檔資料表：單位、使用者、稽核紀錄(audit_logs)
+-- 相依：無
+-- =====================================================================
+USE nuksams;
+
+CREATE TABLE IF NOT EXISTS units (
+    unit_id       INT AUTO_INCREMENT PRIMARY KEY,
+    name          VARCHAR(100) NOT NULL UNIQUE,
+    type          ENUM('SCHOOL','GOVERNMENT','PRIVATE','OTHER') NOT NULL DEFAULT 'OTHER',
+    contact_email VARCHAR(100),
+    created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS users (
+    user_id     INT AUTO_INCREMENT PRIMARY KEY,
+    account     VARCHAR(50)  NOT NULL UNIQUE,
+    password    VARCHAR(255) NOT NULL,
+    name        VARCHAR(100) NOT NULL,
+    email       VARCHAR(100),
+    role        ENUM('STUDENT','TEACHER','SPONSOR','REVIEWER','ADMIN') NOT NULL,
+    unit_id     INT NULL,
+    gpa         DECIMAL(3,2) NULL,
+    department  VARCHAR(100) NULL,
+    status      ENUM('ACTIVE','DISABLED') NOT NULL DEFAULT 'ACTIVE',
+    -- AAS003 單一登入：目前有效 session 識別碼（JWT jti）與到期時間（供 AAS015 線上人數）
+    session_token       VARCHAR(64) NULL,
+    session_expires_at  DATETIME NULL,
+    created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_users_unit FOREIGN KEY (unit_id) REFERENCES units(unit_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 舊資料庫升級：若 users 建立於早期版本，補上 AAS003 需要的 session 欄位
+SET @has_session_token := (
+    SELECT COUNT(*)
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'users'
+      AND COLUMN_NAME = 'session_token'
+);
+SET @sql_session_token := IF(
+    @has_session_token = 0,
+    'ALTER TABLE users ADD COLUMN session_token VARCHAR(64) NULL',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql_session_token;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @has_session_expires_at := (
+    SELECT COUNT(*)
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'users'
+      AND COLUMN_NAME = 'session_expires_at'
+);
+SET @sql_session_expires_at := IF(
+    @has_session_expires_at = 0,
+    'ALTER TABLE users ADD COLUMN session_expires_at DATETIME NULL',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql_session_expires_at;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- 科系與部門（供帳號 / 獎學金資格的科系下拉與資格比對使用）
+CREATE TABLE IF NOT EXISTS departments (
+    department_id INT AUTO_INCREMENT PRIMARY KEY,
+    name          VARCHAR(100) NOT NULL UNIQUE,
+    college       VARCHAR(100) NULL,                                       -- 所屬學院（行政部門可留空）
+    category      ENUM('ACADEMIC','ADMIN') NOT NULL DEFAULT 'ACADEMIC',    -- ACADEMIC=科系 / ADMIN=行政部門
+    created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 稽核紀錄（4.2.5 / NUKSAMS038）：記錄管理與審查等重要操作
+CREATE TABLE IF NOT EXISTS audit_logs (
+    log_id      INT AUTO_INCREMENT PRIMARY KEY,
+    actor_id    INT NULL,
+    action      VARCHAR(100) NOT NULL,
+    target_type VARCHAR(50)  NULL,
+    target_id   INT NULL,
+    detail      VARCHAR(500) NULL,
+    created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_audit_actor FOREIGN KEY (actor_id) REFERENCES users(user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

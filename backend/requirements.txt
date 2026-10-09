@@ -1,0 +1,17 @@
+fastapi>=0.115
+uvicorn[standard]>=0.30
+sqlalchemy>=2.0
+pymysql>=1.1
+cryptography>=42.0          # PyMySQL 連 MySQL 8 caching_sha2_password 需要
+pydantic>=2.8
+pydantic-settings>=2.4
+python-multipart>=0.0.9     # 文件上傳（SAS 6.2.4）
+passlib[bcrypt]>=1.7        # 密碼雜湊（AAS）
+bcrypt==4.0.1
+python-jose[cryptography]>=3.3  # JWT（AAS 登入）
+psutil>=5.9                 # 系統維運監控（AAS015-016 伺服器負載）
+reportlab>=4.0              # 統計報表 PDF 匯出（RAS016-017，含中文 CID 字型）
+
+# 測試
+pytest>=8.0
+httpx>=0.27                 # FastAPI TestClient 需要
