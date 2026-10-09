@@ -36,7 +36,6 @@ SWE_final/
 ├── scripts/                   # 啟動與資料庫初始化腳本
 ├── 軟體需求分析規格書報告.pdf # 軟體需求規格書 (SRS)
 ├── 軟體設計規格書報告.pdf     # 軟體設計規格書 (SDD)
-├── requirement.md             # 需求規格書 Markdown 版
 └── start.bat                  # Windows 一鍵啟動入口
 ```
 
@@ -65,7 +64,6 @@ SWE_final/
 
 - [軟體需求分析規格書 (SRS)](軟體需求分析規格書報告.pdf)：系統完整需求、使用案例 (Use Case) 與系統流程分析。
 - [軟體設計規格書 (SDD)](軟體設計規格書報告.pdf)：系統架構設計、資料庫綱要與 API 介面詳細設計。
-- [需求規格書 (MD版)](requirement.md)：專案需求與各子系統規劃簡要版本。
 - [開發說明](docs/DEVELOPMENT.md)：環境建置及協作方式。
 - [API 介面契約](docs/API.md)：前後端 API 說明。
 
